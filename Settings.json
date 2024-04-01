@@ -1,0 +1,19 @@
+{
+	"login": "DUB1401",
+	"password": "vlad1401",
+	"mature-book-id": 6860,
+	"check-updates-period": 5,
+	"novels-directory": "",
+	"images-directory": "",
+	"covers-directory": "",
+	"link-to-images-directory": true,
+	"prettifier": true,
+	"proxy": {
+		"enable": true,
+		"host": "194.67.222.19",
+		"port": "9704",
+		"login": "5zEw9E",
+		"password": "dxUYjQ"
+	},
+	"delay": 0
+}
