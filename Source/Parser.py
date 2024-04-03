@@ -132,8 +132,8 @@ class Parser:
 			# Если название главы пустое, обнулить его.
 			if ChapterName == "": ChapterName = None
 
-		# Если включена очистка названия.
-		if self.__Settings["prettifier"]:
+		# Если включена очистка названия и название имеется.
+		if self.__Settings["prettifier"] and ChapterName != None:
 			# Замена трёх точек символом многоточия.
 			ChapterName.replace("...", "…")
 			# Удаление повторяющихся символов многоточия.
@@ -141,14 +141,14 @@ class Parser:
 			# Удаление краевых символов.
 			ChapterName = ChapterName.strip(".")
 
-		# Если название главы не содержит букв.
-		if IsNotAlpha(ChapterName): ChapterName = None
+		# Если название имеется и не содержит букв.
+		if ChapterName != None and IsNotAlpha(ChapterName): ChapterName = None
 			
 		return ChapterName
 	
 	def __GetNumberFromString(self, String: str) -> int | float | None:
 		# Поиск первого числа.
-		Result = re.search("\d+(.\d+)?", String)
+		Result = re.search("\d+(\.\d+)?", String)
 		# Число.
 		Number = None
 		
@@ -226,7 +226,7 @@ class Parser:
 					# Если есть перевод.
 					if Container != None:
 						# Поиск всех вложенных тегов.
-						Paragraphs = Container.find_all(["p", "table", "blockquote"], recursive = False)
+						Paragraphs = Container.find_all(["div", "p", "table", "blockquote"], recursive = False)
 						# Буфер абзацев.
 						Buffer = list()
 				
@@ -277,7 +277,7 @@ class Parser:
 								# Скачивание иллюстрации.
 								Result = self.__DownloadImage(Image["src"], ID, ImageIndex)
 								# Определение точки монтирования ссылок.
-								ImagesDirectory = self.__Settings["images-directory"].split("/")[-1] if self.__Settings["link-to-images-directory"] else ""
+								ImagesDirectory = "/" + self.__Settings["images-directory"].split("/")[-1] if self.__Settings["link-to-images-directory"] else ""
 								# Замена ссылки изображения.
 								Image.attrs = {"src": ImagesDirectory + f"/{self.__ID}/{ID}/{Result}"}
 								# Замена абзаца обработанным.
@@ -399,7 +399,7 @@ class Parser:
 		for Row in Rows:
 			
 			# Если строка описывает том.
-			if "volume_helper" in Row["class"]:
+			if "volume_helper" in Row["class"] and Row.has_attr("id"):
 				# Получение номера тома.
 				CurrentVolume = self.__GetNumberFromString(Row.get_text())
 				
@@ -421,7 +421,6 @@ class Parser:
 					"is-paid": IsPaid,
 					"translator": None,
 					"paragraphs": []
-				
 				}
 				# Запись буфера.
 				Chapters.append(Buffer)
@@ -625,7 +624,7 @@ class Parser:
 		# Статус.
 		Status = "UNKNOWN"
 		# Поиск строки статуса.
-		StatusLine = Soup.find_all("dl", {"class": "info"})[1].find("dd").get_text().strip()
+		StatusLine = Soup.find_all("dl", {"class": "info"})[1].find("dd").get_text().split("(")[0].strip()
 		# Если строка статуса определена, установить статус.
 		if StatusLine in Statuses.keys(): Status = Statuses[StatusLine]
 			
