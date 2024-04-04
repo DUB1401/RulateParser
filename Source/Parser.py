@@ -352,9 +352,9 @@ class Parser:
 						if self.__Settings["prettifier"]:
 							
 							# Пока в последнем абзаце отсутсвуют буквенные символы, удалять последний абзац.
-							while not re.search("[a-zA-ZА-я_]{3,}", Buffer[-1]): Buffer.pop()
+							while len(Buffer) > 0 and not re.search("[a-zA-ZА-я_]{3,}", Buffer[-1]): Buffer.pop()
 							# Если в первом абзаце присутствует номер главы, удалить его.
-							if re.search("глава \d+", Buffer[0], re.IGNORECASE) or re.search("^эпилог|пролог|экстра", Buffer[0], re.IGNORECASE): Buffer.pop(0)
+							if len(Buffer) > 0 and re.search("глава \d+", Buffer[0], re.IGNORECASE) or len(Buffer) > 0 and re.search("^эпилог|пролог|экстра", Buffer[0], re.IGNORECASE): Buffer.pop(0)
 
 						# Запись в лог сообщения: глава дополнена контентом.
 						logging.info(f"Novel: {self.__ID}. Chapter: {ID}. Amended.")
