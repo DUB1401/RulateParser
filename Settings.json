@@ -8,6 +8,7 @@
 	"covers-directory": "",
 	"link-to-images-directory": true,
 	"prettifier": true,
+	"filters": true,
 	"proxy": {
 		"enable": true,
 		"host": "194.67.222.19",

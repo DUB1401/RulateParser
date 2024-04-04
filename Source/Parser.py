@@ -15,7 +15,7 @@ import re
 class Parser:
 	
 	#==========================================================================================#
-	# >>>>> ДОПОЛНИТЕЛЬНЫЕ МТОДЫ <<<<< #
+	# >>>>> ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ <<<<< #
 	#==========================================================================================#
 	
 	def __CheckForLinkParagraph(self, Paragraph: str) -> bool:
@@ -114,6 +114,12 @@ class Parser:
 			
 		return Filename
 	
+	def __FilterStringData(self, Data: str):
+		# Для каждого регулярного выражения удалить все вхождения.
+		for Regex in self.__Filters: Data = re.sub(Regex, "", Data)
+
+		return Data
+
 	def __GetChapterName(self, ChapterName: str, Number: int | float | None) -> str | None:
 		# Приведение номера главы к строке.
 		Number = str(Number)
@@ -194,6 +200,25 @@ class Parser:
 		# Запись в лог сообщения: количество дополненных глав.
 		logging.info(f"Novel: {self.__ID}. Merged chapters: {MergedChaptersCount}.")
 
+	def __ReadFilters(self) -> list[str]:
+		# Список регулярных выражений.
+		RegexList = list()
+
+		# Если файл фильтров существует.
+		if os.path.exists("Filters.txt"):
+
+			# Чтение содржимого файла.
+			with open("Filters.txt", "r") as FileReader:
+				# Буфер чтения.
+				Bufer = FileReader.read().split("\n")
+				
+				# Для каждой строки.
+				for String in Bufer:
+					# Если строка не пуста и не комментарий, поместить её в список регулярных выражений.
+					if String.strip() != "" and not String.startswith("#"): RegexList.append(String.strip())
+
+		return RegexList
+
 	#==========================================================================================#
 	# >>>>> МЕТОДЫ ПАРСИНГА <<<<< #
 	#==========================================================================================#
@@ -250,7 +275,7 @@ class Parser:
 								# Поиск стиля.
 								AlignStyle = re.search("text-align:.+;", str(ParagraphHTML.text))
 								# Если тег имеет стиль выравнивания, оставить только его.
-								if AlignStyle: p["style"] = Align = AlignStyle[0]
+								if AlignStyle: Align = AlignStyle[0]
 								
 							# Обработка тегов.
 							ParagraphHTML.remove_tags(["div"])
@@ -259,6 +284,13 @@ class Parser:
 							ParagraphHTML.replace_tag("strong", "b")
 							# Получение текста для проверок.
 							Text = ParagraphHTML.text.strip().replace("\xa0", " ")
+
+							# Если включены фильтры.
+							if self.__Settings["filters"]:
+
+								# Для каждого абзаца провести фильтрацию.
+								for Index in range(len(Buffer)): Buffer[Index] = self.__FilterStringData(Buffer[Index])
+
 							# Если параграф не пустой и не является ссылкой, добавить его.
 							if Text != "" and not self.__CheckForLinkParagraph(Text): Buffer.append(f"<p{Align}>{Text}</p>")
 					
@@ -431,18 +463,26 @@ class Parser:
 		return Chapters
 	
 	def __GetDescription(self, Soup: BeautifulSoup) -> str | None:
+		# Поиск блока описания.
 		DescriptionBlock = Soup.find("div", {"style": "margin: 20px 0 0 0"})
+		# Описание.
 		Description = None
 		
-		if DescriptionBlock != None:
+		# Если блок описания найден.
+		if DescriptionBlock:
+			# Поиск всех абзацев.
 			Paragraphs = DescriptionBlock.find_all("p")
+			# Приведение описания к строковому типу.
 			Description = ""
 			
-			for P in Paragraphs:
-				Description += HTML(P.get_text()).plain_text.strip() + "\n"
+			# Для каждого абзаца добавить строку описания.
+			for p in Paragraphs: Description += HTML(p.get_text()).plain_text.strip() + "\n"
 				
+		# Удаление повторяющихся и концевых символов новой строки.
 		Description = RemoveRecurringSubstrings(Description, "\n")
 		Description = Description.strip("\n")
+		# Если включены фильтры, обработать описание.
+		if self.__Settings["filters"]: Description = self.__FilterStringData(Description)
 		
 		return Description
 
@@ -649,6 +689,8 @@ class Parser:
 		
 		#---> Генерация динамических свойств.
 		#==========================================================================================#
+		# Список фильтров на основе регулярных выражений.
+		self.__Filters = self.__ReadFilters()
 		# Глоабльные настройки.
 		self.__Settings = Settings
 		# Менеджер запросов.
